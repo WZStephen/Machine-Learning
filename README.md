@@ -11,3 +11,9 @@
   * Convolutional Neural Network(CNN)
   * Auto-encoder
   * Gaussian Processes regression(GPR)
+
+# BERT
+* TBD
+
+# Style Transfer Learning
+* TBC
