@@ -10,8 +10,8 @@ from tensorflow.python.keras.layers import LeakyReLU
 from sklearn.decomposition import PCA
 import utilities
 
-def Train_CNN_Label1():
 
+def Train_CNN_Label1():
     train_data, test_data, train_label, test_label = dataReader(0, 'cleaned_temp_32')
 
     model = models.Sequential()
@@ -33,8 +33,8 @@ def Train_CNN_Label1():
     model.save('saved_models/CNN_temp_v1_L1')
     print('finished')
 
-def Train_CNN_Label2():
 
+def Train_CNN_Label2():
     train_data, test_data, train_label, test_label = dataReader(1, 'cleaned_temp_128')
 
     model = models.Sequential()
@@ -56,6 +56,21 @@ def Train_CNN_Label2():
     model.save('saved_models/CNN_temp_v1_L2')
     print('finished')
 
+
+def Train_Residual_Label1():
+    # train_data, test_data, train_label, test_label = dataReader(0, 'cleaned_temp_32')
+    tf.keras.applications.ResNet50(
+        include_top=True,
+        weights="imagenet",
+        input_tensor=None,
+        input_shape=None,
+        pooling=None,
+        classes=1000,
+        **kwargs
+    )
+    print()
+
+
 def Test_Model():
     # test_data = testData_1stRow[..., tf.newaxis]
     # test_label = testLabel_1stRow[..., tf.newaxis]
@@ -74,39 +89,23 @@ def Test_Model():
     train_data, test_data, train_label, test_label = dataReader(1, 'cleaned_temp_128')
     results = model.predict(test_data)
     combined2 = np.stack((test_label, results), axis=1)
-
     fin = np.concatenate((combined1, combined2), axis=1)
-
     np.save('results/r2', fin)
+    '''
+    ------r2.npy data structure------
+    row1: original data corresponding with label1
+    row2: predicted data corresponding with label1
+    row3: original data corresponding with label2
+    row4: predicted data corresponding with label2
+    '''
     utilities.vis_gaussian(fin)
     print('prediction finished!')
-
-
-def dataReader(index, path):
-    #######################
-    ####### 读取数据集 ######
-    #######################
-
-    trainData = np.load('data/' + path + '/train_data.npy')
-    testData = np.load('data/' + path + '/test_data.npy')
-
-    trainLabel = np.load('data/' + path + '/train_labels.npy')
-    trainLabel_oneRow = trainLabel[:, index, :]
-    testLabel = np.load('data/' + path + '/test_labels.npy')
-    testLabel_oneRow = testLabel[:, index, :]
-
-    train_data = trainData.astype('float32') / 255.
-    test_data = testData.astype('float32') / 255.
-    train_label = trainLabel_oneRow.astype('float32') / 255.
-    test_label = testLabel_oneRow.astype('float32') / 255.
-    return train_data, test_data, train_label, test_label
 
 
 if __name__ == "__main__":
     # Train_CNN_Label1()
     # Train_CNN_Label2()
     # Train_AutoCNN()
-    utilities.load_npy('results/r2.npy')
     # Test_Model()
     # utilities.load_images_v2()
-
+    Train_Residual_Label1()

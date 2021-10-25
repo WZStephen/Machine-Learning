@@ -13,6 +13,8 @@ from skimage.io import imread_collection
 from random import randrange
 from random import randrange
 from sklearn import preprocessing
+from scipy.interpolate import interp1d, make_interp_spline, make_lsq_spline, BarycentricInterpolator
+from scipy.interpolate import Rbf
 
 
 def vis_gaussian(np_array):
@@ -38,8 +40,8 @@ def vis_gaussian(np_array):
 def load_npy(path):
     '''normal distribution test'''
     np_array = np.load(path)
-    tmp = np_array[406]
-    savetxt('results/labels406_data.csv', tmp, delimiter=',')
+    # tmp = np_array[406]
+    # savetxt('results/labels406_data.csv', tmp, delimiter=',')
 
     figure, ax = plt.subplots(2, 5, figsize=(40, 10))
     figure.tight_layout()
@@ -47,16 +49,20 @@ def load_npy(path):
         index = randrange(1496)
         '''第一标签'''
         ax[0][i].title.set_text('Label1 at #' + str(index))
-        ax[0][i].plot(np_array[index, 0, :], label="Original")
-        ax[0][i].legend()
+        # ax[0][i].plot(np_array[index, 0, :], label="Original")
+        # ax[0][i].legend()
         ax[0][i].plot(np_array[index, 1, :], label="Predicted")
+        ax[0][i].legend()
+        ax[0][i].plot(np_array[i, 4, :], label="Predicted_interp")
         ax[0][i].legend()
 
         '''第二标签'''
-        ax[1][i].title.set_text('Label2 at #'+ str(index))
-        ax[1][i].plot(np_array[index, 2, :], label="Original")
-        ax[1][i].legend()
+        ax[1][i].title.set_text('Label2 at #' + str(index))
+        # ax[1][i].plot(np_array[index, 2, :], label="Original")
+        # ax[1][i].legend()
         ax[1][i].plot(np_array[index, 3, :], label="Predicted")
+        ax[1][i].legend()
+        ax[1][i].plot(np_array[i, 5, :], label="Predicted_interp")
         ax[1][i].legend()
     plt.show()
 
@@ -116,3 +122,144 @@ def load_images_v2():
     np.save('data/cleaned_temp_128/train_labels.npy', train_labels)
     np.save('data/cleaned_temp_128/test_labels.npy', test_labels)
     print('finished')
+
+
+def smooth_line(npy_path):
+    np_array = np.load(npy_path)
+    x = np.arange(0, 256, 1)
+    figure, ax = plt.subplots(2, 5, figsize=(40, 10))
+    figure.tight_layout()
+    result_max_label1 = []
+    result_max_label2 = []
+    for i in range(5):
+        index = randrange(1495)
+        y1 = np_array[index, 1, :]
+        y2 = np_array[index, 3, :]
+        new_x = np.linspace(x.min(), x.max(), 50)
+        spl1 = make_interp_spline(x, y1, k=1)  # type: BSpline
+        spl2 = make_interp_spline(x, y2, k=1)  # type: BSpline
+        new_y1 = spl1(new_x)
+        new_y2 = spl2(new_x)
+        f2_1 = interp1d(new_x, new_y1, kind='cubic')
+        f2_2 = interp1d(new_x, new_y2, kind='cubic')
+        xnew1 = np.linspace(x.min(), x.max(), 30, endpoint=True)
+        ynew1 = f2_1(xnew1)
+        xnew2 = np.linspace(x.min(), x.max(), 30, endpoint=True)
+        ynew2 = f2_2(xnew2)
+
+        '''第一标签'''
+        ax[0][i].title.set_text('Label1 at #' + str(index))
+        ax[0][i].plot(np_array[index, 0, :], label="Original")
+        ax[0][i].legend()
+        # ax[0][i].plot(np_array[index, 1, :], label="Predicted")
+        # ax[0][i].legend()
+        ax[0][i].plot(xnew1, ynew1, label="Predicted_interp")
+        ax[0][i].legend()
+        result_max_label1.append(np.max(ynew1))
+        '''第二标签'''
+        ax[1][i].title.set_text('Label2 at #' + str(index))
+        ax[1][i].plot(np_array[index, 2, :], label="Original")
+        ax[1][i].legend()
+        # ax[1][i].plot(np_array[index, 3, :], label="Predicted")
+        # ax[1][i].legend()
+        ax[1][i].plot(xnew2, ynew2, label="Predicted_interp")
+        ax[1][i].legend()
+        result_max_label2.append(np.max(ynew2))
+    plt.show()
+    combined = np.stack((result_max_label1, result_max_label2), axis=0)
+    # np.save('results/r2_interp_npy_max.npy', combined)
+
+
+def average_interp(npy_path):
+    np_array = np.load(npy_path)
+    result_list = []
+    for i in range(0, len(np_array)):
+        y1 = np_array[i, 1, :]
+        y2 = np_array[i, 3, :]
+        tmp1 = np.copy(y1)
+        tmp2 = np.copy(y2)
+        for j in range(0, len(y1)):
+            division1 = sum(y1[j: j + 8]) / 8.
+            division2 = sum(y2[j: j + 20]) / 20.
+            tmp1[j] = division1
+            tmp2[j] = division2
+        new_row = np.concatenate((np_array[i], np.stack((tmp1, tmp2), axis=0)), axis=0)
+        result_list.append(new_row)
+    fin = np.array(result_list)
+    np.save('results/r2_interp', fin)
+    '''
+    ------r2.npy data structure------
+    row0: original data corresponding with label1
+    row1: predicted data corresponding with label1
+    row2: original data corresponding with label2
+    row3: predicted data corresponding with label2
+    row4: predicted data after interpolate corresponding with label1
+    row5: predicted data after interpolate corresponding with label2
+    '''
+    # x = np.arange(0, 256, 1)
+    # plt.plot(x, fin[0, 3, :])
+    # plt.plot(x, fin[0, 5, :])
+    # plt.show()
+    # print()
+
+
+def evaluation(npy_path):
+    np_array = np.load(npy_path)
+    p = np.load('results/r2_interp_npy_max.npy')
+    result_label1 = []
+    result_label2 = []
+    for i in range(0, len(np_array)):
+        y = np_array[i, :, :]
+        o1 = y[0, :]
+        o2 = y[2, :]
+        p1_max = p[0, i]
+        p2_max = p[1, i]
+        o1_max = np.max(o1)
+        o2_max = np.max(o2)
+        index_of_maximum_o1 = np.where(o1 == o1_max)
+        index_of_maximum_o2 = np.where(o2 == o2_max)
+        o1_range = o1[int(index_of_maximum_o1[0]) - 11 : int(index_of_maximum_o1[0]) + 10]
+        o2_range = o2[int(index_of_maximum_o2[0]) - 11 : int(index_of_maximum_o2[0]) + 10]
+        if p1_max >= o1_range[0] and p1_max >= o1_range[20]:
+            result_label1.append('1')
+            print('label1 validation success')
+        else:
+            result_label1.append('0')
+            # print('label1 validation failed')
+
+        if p2_max >= o2_range[0] and p2_max >= o2_range[20]:
+            result_label2.append('1')
+            # print('label2 validation success')
+        else:
+            result_label2.append('0')
+            # print('label2 validation failed')
+    num1 = result_label1.count('1')
+    num2 = result_label2.count('1')
+    print(str(num1) + '/' + '1496' + '\n' +
+          str(num2) + '/' + '1496')
+
+
+def dataReader(index, path):
+    #######################1
+    ####### 读取数据集 ######
+    #######################
+    trainData = np.load('data/' + path + '/train_data.npy')
+    testData = np.load('data/' + path + '/test_data.npy')
+
+    trainLabel = np.load('data/' + path + '/train_labels.npy')
+    trainLabel_oneRow = trainLabel[:, index, :]
+    testLabel = np.load('data/' + path + '/test_labels.npy')
+    testLabel_oneRow = testLabel[:, index, :]
+
+    train_data = trainData.astype('float32') / 255.
+    test_data = testData.astype('float32') / 255.
+    train_label = trainLabel_oneRow.astype('float32') / 255.
+    test_label = testLabel_oneRow.astype('float32') / 255.
+    return train_data, test_data, train_label, test_label
+
+
+if __name__ == "__main__":
+    # average_interp('results/r2.npy')
+    # load_npy('results/r2_interp.npy')
+    smooth_line('results/r2.npy')
+    # evaluation('results/r2_interp.npy')

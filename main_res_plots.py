@@ -9,7 +9,7 @@ import tensorflow as tf
 from tensorflow.keras import losses
 from tensorflow.keras.models import Model
 from tensorflow.keras import layers, models
-from tensorflow.python.keras.layers import LeakyReLU
+from tensorflow.python.kedasras.layers import LeakyReLU
 from sklearn.decomposition import PCA
 import pandas as pd
 from utilities import vis_gaussian
