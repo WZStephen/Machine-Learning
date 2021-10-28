@@ -8,7 +8,7 @@
   * res_plots: 400 x 400 pixels of plots
 ## Datasets
   * <ins>Format:</ins> [# of samples] x [pixels] x [pixels]
-  * 7480 x 600x 800 Simulated Finite-Fault Rupture Data(Unshffled)
+  * 7480 x 600x 800 Simulated Finite-Fault Rupture Data(Unshuffled)
   * Training set for label 1: 5984 x 32 x 32 (Cropped)
   * Training set for label 2: 5984 x 128 x 128 (Cropped)
   * Testing set for label 1: 1496 x 32 x 32  (Cropped)
