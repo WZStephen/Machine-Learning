@@ -218,16 +218,16 @@ def evaluation(npy_path):
         o2_max = np.max(o2)
         index_of_maximum_o1 = np.where(o1 == o1_max)
         index_of_maximum_o2 = np.where(o2 == o2_max)
-        o1_range = o1[int(index_of_maximum_o1[0]) - 11 : int(index_of_maximum_o1[0]) + 10]
-        o2_range = o2[int(index_of_maximum_o2[0]) - 11 : int(index_of_maximum_o2[0]) + 10]
-        if p1_max >= o1_range[0] and p1_max >= o1_range[20]:
+        o1_range = o1[int(index_of_maximum_o1[0]) - 16 : int(index_of_maximum_o1[0]) + 15]
+        o2_range = o2[int(index_of_maximum_o2[0]) - 16 : int(index_of_maximum_o2[0]) + 15]
+        if p1_max >= o1_range[0] and p1_max >= o1_range[30]:
             result_label1.append('1')
             print('label1 validation success')
         else:
             result_label1.append('0')
             # print('label1 validation failed')
 
-        if p2_max >= o2_range[0] and p2_max >= o2_range[20]:
+        if p2_max >= o2_range[0] and p2_max >= o2_range[30]:
             result_label2.append('1')
             # print('label2 validation success')
         else:
@@ -261,5 +261,5 @@ def dataReader(index, path):
 if __name__ == "__main__":
     # average_interp('results/r2.npy')
     # load_npy('results/r2_interp.npy')
-    smooth_line('results/r2.npy')
-    # evaluation('results/r2_interp.npy')
+    # smooth_line('results/r2.npy')
+    evaluation('results/r2_interp.npy')

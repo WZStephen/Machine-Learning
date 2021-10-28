@@ -12,7 +12,7 @@ import utilities
 
 
 def Train_CNN_Label1():
-    train_data, test_data, train_label, test_label = dataReader(0, 'cleaned_temp_32')
+    train_data, test_data, train_label, test_label = utilities.dataReader(0, 'cleaned_temp_32')
 
     model = models.Sequential()
     model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(32, 32, 3)))
@@ -35,7 +35,7 @@ def Train_CNN_Label1():
 
 
 def Train_CNN_Label2():
-    train_data, test_data, train_label, test_label = dataReader(1, 'cleaned_temp_128')
+    train_data, test_data, train_label, test_label = utilities.dataReader(1, 'cleaned_temp_128')
 
     model = models.Sequential()
     model.add(layers.Conv2D(128, (3, 3), activation='relu', padding='same', input_shape=(128, 128, 3)))
@@ -108,4 +108,4 @@ if __name__ == "__main__":
     # Train_AutoCNN()
     # Test_Model()
     # utilities.load_images_v2()
-    Train_Residual_Label1()
+    # Train_Residual_Label1()
