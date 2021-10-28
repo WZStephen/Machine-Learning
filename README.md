@@ -6,7 +6,8 @@
   * number of data: 7480 
   * Info2: **震级、破裂角度**、破裂长度、宽度
   * res_plots: 400 x 400 pixels of plots
-## Dataset eg . [# of samples] x [pixels] x [pixels]
+## Datasets
+  * <ins>Format:</ins> [# of samples] x [pixels] x [pixels]
   * 7480 x 600x 800 Simulated Finite-Fault Rupture Data(Unshffled)
   * Training set for label 1: 5984 x 32 x 32 (Cropped)
   * Training set for label 2: 5984 x 128 x 128 (Cropped)
@@ -17,7 +18,7 @@
   * Autoencoder(自动编码器)
   * AutoCNN(卷积神经网络 + CNN)
   * Deep Reisidual Network
-## Result for CNN
+## Results
   * CNN
     * Treat the peak point of predicted sample as a correct prediction if the it located at range of -10 to +10 from corresponding validation sample. 
       * Label1: 1102/1496 (73.66%)
