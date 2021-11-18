@@ -1,7 +1,0 @@
-.idea/*
-data/original/*
-data/shrinkled/*
-data/*
-saved_models
-__pycache__
-venv/
