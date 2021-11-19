@@ -1,62 +1,104 @@
-from tensorflow.keras.layers import Dense
+import torch
+import torch.nn as nn
+import torchvision
 import numpy as np
-import tensorflow as tf
-import utilities as utils
-from tensorflow.keras import losses
-from tensorflow.keras import Model
-import matplotlib.pyplot as plt
-from random import randrange
 
-def Train_DRN_Label():
-    train_data, test_data, train_label, test_label = utils.dataReader(0, 'cleaned_temp_128')
-    # model = ResNet50(weights='imagenet')
-    # img_path = 'data/fragrans.jpg'
-    # img = image.load_img(img_path, target_size=(224, 224))
-    # x = image.img_to_array(img)
-    # x = np.expand_dims(x, axis=0)
-    # x = preprocess_input(x)
-    # input_tensor = Input(shape=(224, 224, 3))
-    base_model = tf.keras.applications.resnet.ResNet50(include_top=False, weights='imagenet', input_tensor=None,
-                                                       input_shape=(128,128,3), pooling='max')
-    x = base_model.output
-    x = Dense(1024, activation='LeakyReLU')(x)
-    predictions = Dense(256, activation='LeakyReLU')(x)
-    model = Model(inputs=base_model.input, outputs=predictions)
-    model.summary()
+print("PyTorch Version: ",torch.__version__)
+print("Torchvision Version: ",torchvision.__version__)
 
-    # 编译模型
-    model.compile(optimizer='adam', loss=losses.MeanSquaredError())
-    model.fit(train_data, train_label, epochs=11, validation_data=(test_data, test_label))
-    model.save('saved_models/Resnet_v1')
-    print('finished')
+__all__ = ['ResNet50', 'ResNet101','ResNet152']
+
+def Conv1(in_planes, places, stride=2):
+  return nn.Sequential(
+    nn.Conv2d(in_channels=in_planes,out_channels=places,kernel_size=7,stride=stride,padding=3, bias=False),
+    nn.BatchNorm2d(places),
+    nn.ReLU(inplace=True),
+    nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+  )
+
+class Bottleneck(nn.Module):
+  def __init__(self,in_places,places, stride=1,downsampling=False, expansion = 4):
+    super(Bottleneck,self).__init__()
+    self.expansion = expansion
+    self.downsampling = downsampling
+
+    self.bottleneck = nn.Sequential(
+      nn.Conv2d(in_channels=in_places,out_channels=places,kernel_size=1,stride=1, bias=False),
+      nn.BatchNorm2d(places),
+      nn.ReLU(inplace=True),
+      nn.Conv2d(in_channels=places, out_channels=places, kernel_size=3, stride=stride, padding=1, bias=False),
+      nn.BatchNorm2d(places),
+      nn.ReLU(inplace=True),
+      nn.Conv2d(in_channels=places, out_channels=places*self.expansion, kernel_size=1, stride=1, bias=False),
+      nn.BatchNorm2d(places*self.expansion),
+    )
+
+    if self.downsampling:
+      self.downsample = nn.Sequential(
+        nn.Conv2d(in_channels=in_places, out_channels=places*self.expansion, kernel_size=1, stride=stride, bias=False),
+        nn.BatchNorm2d(places*self.expansion)
+      )
+    self.relu = nn.ReLU(inplace=True)
+  def forward(self, x):
+    residual = x
+    out = self.bottleneck(x)
+
+    if self.downsampling:
+      residual = self.downsample(x)
+
+    out += residual
+    out = self.relu(out)
+    return out
+
+class ResNet(nn.Module):
+  def __init__(self,blocks, num_classes=1000, expansion = 4):
+    super(ResNet,self).__init__()
+    self.expansion = expansion
+
+    self.conv1 = Conv1(in_planes = 3, places= 64)
+
+    self.layer1 = self.make_layer(in_places = 64, places= 64, block=blocks[0], stride=1)
+    self.layer2 = self.make_layer(in_places = 256,places=128, block=blocks[1], stride=2)
+    self.layer3 = self.make_layer(in_places=512,places=256, block=blocks[2], stride=2)
+    self.layer4 = self.make_layer(in_places=1024,places=512, block=blocks[3], stride=2)
+
+    self.avgpool = nn.AvgPool2d(7, stride=1)
+    self.fc = nn.Linear(2048,num_classes)
+
+    for m in self.modules():
+      if isinstance(m, nn.Conv2d):
+        nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+      elif isinstance(m, nn.BatchNorm2d):
+        nn.init.constant_(m.weight, 1)
+        nn.init.constant_(m.bias, 0)
+
+  def make_layer(self, in_places, places, block, stride):
+    layers = []
+    layers.append(Bottleneck(in_places, places,stride, downsampling =True))
+    for i in range(1, block):
+      layers.append(Bottleneck(places*self.expansion, places))
+
+    return nn.Sequential(*layers)
 
 
-def Test_Model():
-    model = tf.keras.models.load_model('saved_models/Resnet_v1')
-    model.summary()
-    train_data, test_data, train_label, test_label = utils.dataReader(0, 'cleaned_temp_128')
-    results = model.predict(test_data)
-    combined1 = np.stack((test_label, results), axis=1)
+  def forward(self, x):
+    x = self.conv1(x)
 
-    train_data, test_data, train_label, test_label = utils.dataReader(1, 'cleaned_temp_128')
-    results = model.predict(test_data)
-    combined2 = np.stack((test_label, results), axis=1)
+    x = self.layer1(x)
+    x = self.layer2(x)
+    x = self.layer3(x)
+    x = self.layer4(x)
 
-    fin = np.concatenate((combined1, combined2), axis=1)
-    np.save('results/r1_resnet', fin)
-    print('prediction finished!')
+    x = self.avgpool(x)
+    x = x.view(x.size(0), -1)
+    x = self.fc(x)
+    return x
 
-    # figure, ax = plt.subplots(2, 5, figsize=(40, 10))
-    # figure.tight_layout()
-    # for i in range(0, 5):
-    #     index = randrange(1496)
-    #     '''第一标签'''
-    #     ax[0][i].title.set_text('Label1')
-    #     ax[0][i].plot(combined1[index, 0, :], label="Original")
-    #     ax[0][i].legend()
-    #     ax[0][i].plot(combined1[index, 1, :], label="Predicted")
-    #     ax[0][i].legend()
-    # plt.show()
-    # print()
+def ResNet50():
+  return ResNet([3, 4, 6, 3])
 
+def ResNet101():
+  return ResNet([3, 4, 23, 3])
 
+def ResNet152():
+  return ResNet([3, 8, 36, 3])
