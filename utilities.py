@@ -1,19 +1,14 @@
 import os
+import shutil
+
 import cv2
-import PIL
 import numpy
 import numpy as np
 import scipy.io
 import sklearn
-from PIL import Image as pil
 import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
-from numpy import asarray, savetxt
-from skimage.io import imread_collection
 from random import randrange
-from sklearn import preprocessing
 from scipy.interpolate import interp1d, make_interp_spline, make_lsq_spline, BarycentricInterpolator
-from scipy.interpolate import Rbf
 
 
 def vis_gaussian(path, title):
@@ -253,3 +248,30 @@ def dataReader(index, path):
     train_label = trainLabel_oneRow.astype('float32') / 255.
     test_label = testLabel_oneRow.astype('float32') / 255.
     return train_data, test_data, train_label, test_label
+
+def tiny_imagenet_val_cleaner():
+    f = open("data/tiny-imagenet-200/val/val_annotations.txt", "r")
+    val = f.read()
+
+    # val_folder = re.findall('\\bn\w+\\b', val)
+    # val_folder = list(dict.fromkeys(val_folder))
+    # for item in val_folder:
+    #     folder_path = 'data/tiny-imagenet-200/val/' + item
+    #     os.mkdir(folder_path)
+
+    cleaned = val.splitlines()
+    res = {}
+    for item in cleaned:
+        line_data = item.split('\t')
+        res.update({line_data[0] : line_data[1]})
+
+    for key, value in res.items():
+        from_var = 'data/tiny-imagenet-200/val/images/' + key
+        to_var = "data/tiny-imagenet-200/val/" + value + "/"
+        shutil.move(src=from_var, dst=to_var)
+    print('finished')
+
+
+if __name__ == '__main__':
+    tiny_imagenet_val_cleaner()
+
