@@ -1,23 +1,22 @@
 import argparse
-import os
 import random
 import shutil
 import time
-import warnings
 
-import torch
-import torch.nn as nn
-import torch.nn.parallel
 import torch.backends.cudnn as cudnn
 import torch.distributed as dist
-import torch.optim
 import torch.multiprocessing as mp
+import torch.nn as nn
+import torch.nn.parallel
+import torch.optim
 import torch.utils.data
 import torch.utils.data.distributed
-import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 import torchvision.models as models
+import torchvision.transforms as transforms
 
+from data import *
+from folder import *
 from utils import *
 
 model_names = sorted(name for name in models.__dict__
@@ -207,7 +206,8 @@ def main_worker(gpu, ngpus_per_node, args):
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                      std=[0.229, 0.224, 0.225])
 
-    train_dataset = datasets.ImageFolder(
+    '''定义图片路径用于读取'''
+    train_dataset = ImageFolder(
         traindir,
         transforms.Compose([
             transforms.RandomResizedCrop(224),
@@ -221,12 +221,15 @@ def main_worker(gpu, ngpus_per_node, args):
     else:
         train_sampler = None
 
-    train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=args.batch_size, shuffle=(train_sampler is None),
+    '''dataloader修改模块'''
+    train_loader = DataLoader(
+        dataset=train_dataset,
+        batch_size=args.batch_size, shuffle=(train_sampler is None),
         num_workers=args.workers, pin_memory=True, sampler=train_sampler)
 
-    val_loader = torch.utils.data.DataLoader(
-        datasets.ImageFolder(valdir, transforms.Compose([
+    '''dataloader修改模块'''
+    val_loader = DataLoader(
+        dataset=datasets.ImageFolder(valdir, transforms.Compose([
             transforms.Resize(256),
             transforms.CenterCrop(224),
             transforms.ToTensor(),
@@ -267,7 +270,7 @@ def main_worker(gpu, ngpus_per_node, args):
 
 
 def train(train_loader, model, criterion, optimizer, epoch, args):
-    batch_time = AverageMeter('Time', ':6.3f')
+    batch_time = AverageMeter('Time', ':6.3f') # 开始做batch的节点准备计时
     data_time = AverageMeter('Data', ':6.3f')
     losses = AverageMeter('Loss', ':.4e')
     top1 = AverageMeter('Acc@1', ':6.2f')  # 对一个图片，如果概率最大的是正确答案，才认为正确。
@@ -308,6 +311,8 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
         # measure elapsed time
         batch_time.update(time.time() - end)
         end = time.time()
+
+        print('batch_time:' + str(batch_time.val))
 
         if i % args.print_freq == 0:
             progress.display(i)

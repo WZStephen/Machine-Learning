@@ -39,4 +39,5 @@
 
 
 # Quiver
-*TBD
+* Add quiver cache IO optimizer, the progress is on the way. However, I have to move to another repository to work with my colleagues.
+* WILL BE UPDATED ONCE IT'S FINISHED
