@@ -27,17 +27,15 @@
       * Label1: 1496/1496 (100.00%)
       * Label2: 1223/1496 (81.75%)
 
-
-# BERT
-* TBD
-
-# Style Transfer Learning
-* TBD
-
+    
 # Deep Residual Network
-* TBD
+* Tried with the finite failure model, but got an unexpected results.
+* Will be trying more models in the future.
 
 
 # Quiver
 * Add quiver cache IO optimizer, the progress is on the way. However, I have to move to another repository to work with my colleagues.
-* WILL BE UPDATED ONCE IT'S FINISHED
+* WILL BE UPDATED ONCE IT'S FINISHED.
+
+# BERT
+* TBD
